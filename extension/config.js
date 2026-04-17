@@ -1,10 +1,9 @@
 // config.js — extension configuration
-// Switch API_URL between local dev and production.
+// Change API_URL to your deployed server URL for production.
+// For local development, keep it pointing to localhost.
 
 const CANDOR_CONFIG = {
-  // Production: 'https://c4ndor.xyz'
-  // Development: 'http://localhost:3000'
-  API_URL: 'https://c4ndor.xyz',
+  API_URL: 'http://localhost:3000',   // production: 'https://your-domain.com'
 }
 
 // Make available globally for popup.js, background.js, and content.js

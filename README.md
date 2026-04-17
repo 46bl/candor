@@ -2,27 +2,59 @@
 
 **Know before you buy. No strings attached.**
 
-Privacy-first review aggregator. Pulls from Amazon, Reddit, Trustpilot, and web articles.
-Analyzes with AI. Keeps nothing.
+Privacy-first, self-hostable review aggregator. Pulls from Amazon, Reddit,
+Trustpilot, and the web. Analyzes with AI. Keeps nothing.
+
+> **Note on scraping:** Datacenter IPs are blocked by Amazon, Trustpilot, and
+> DuckDuckGo. For production use you'll need a search API key (Serper, Brave,
+> or SerpAPI) — see [Configuration](#configuration). Local development with
+> `USE_MOCK=true` works without any keys.
 
 ---
 
-## Web App
+## Features
 
-### Setup
+- **Multi-source aggregation** — Amazon reviews, Reddit discussions, Trustpilot
+  scores, and editorial articles, fetched in parallel
+- **AI analysis** — works with any OpenAI-compatible endpoint: Groq, OpenAI,
+  Anthropic, Ollama, LM Studio, or any custom endpoint
+- **Mullvad-style accounts** — random 16-digit number, no email, SHA-256 hashed
+  server-side. Only the hash is stored.
+- **Browser extension** — Chrome, Edge, Brave, and Firefox (128+). Injects a
+  badge on product pages; popup for quick analysis.
+- **Zero data retention** — review data, AI prompts, and responses are discarded
+  when each request completes. No search history. No IP logging.
+- **Self-hostable** — single Bun process, SQLite database, nginx reverse proxy.
+  Runs on any VPS.
+
+---
+
+## Quick start (local)
 
 ```bash
-cd web
+git clone https://github.com/46bl/candor.git
+cd candor/web
 bun install
-cp .env.example .env   # configure your AI provider (see below)
-bun run dev            # → http://localhost:3000
+cp .env.example .env
+
+# No API keys needed — mock mode returns realistic fake data
+USE_MOCK=true bun run dev
+# → http://localhost:3000
 ```
 
-### AI Providers
+---
 
-```bash
-# Groq — fast, cheap, recommended for production (default)
-# Get a free key at https://console.groq.com
+## Configuration
+
+All configuration is in `web/.env`. Copy `web/.env.example` to get started.
+
+### AI provider
+
+CANDOR works with any provider. Groq with `llama-3.1-8b-instant` is recommended
+— it's fast and has a generous free tier.
+
+```env
+# Groq (recommended — get a free key at console.groq.com)
 AI_PROVIDER=openai
 OPENAI_API_KEY=gsk_...
 OPENAI_BASE_URL=https://api.groq.com/openai/v1
@@ -38,190 +70,172 @@ AI_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 
-# Ollama — local, no API key needed
-# Prerequisites: ollama serve && ollama pull llama3.2
+# Local — Ollama (ollama serve && ollama pull llama3.2)
 AI_PROVIDER=ollama
 OLLAMA_MODEL=llama3.2
 
-# LM Studio — local, no API key needed
-# Prerequisites: start LM Studio server on port 1234
+# Local — LM Studio
 AI_PROVIDER=lmstudio
-
-# Mock mode — deterministic fake data, no AI calls at all
-USE_MOCK=true bun run dev
 ```
 
-### Production
+### Search API (required in production)
 
-```bash
-# Set NODE_ENV=production so the account cookie is flagged Secure (HTTPS only)
-NODE_ENV=production bun run start
+Direct scraping is blocked on datacenter IPs. Add one of these:
+
+| Provider | Free tier | Paid |
+|---|---|---|
+| [Serper.dev](https://serper.dev) | 2,500 searches | $50 / 50k |
+| [Brave Search](https://brave.com/search/api/) | 2,000 / month | ~$3 / 1k |
+| [SerpAPI](https://serpapi.com) | 100 / month | $50 / 5k |
+
+```env
+SERPER_API_KEY=your_key   # or BRAVE_API_KEY or SERPAPI_KEY
 ```
+
+Without a search key, sources fall back to direct scraping — which works in
+development on residential IPs but fails silently on VPS/cloud hosts.
+
+### Accounts and subscriptions
+
+The account system is optional. By default, a free account allows 5 checks/day.
+You can disable the limit or remove the account requirement entirely by editing
+`web/src/lib/account.ts`.
+
+Stripe integration is stubbed. Without `STRIPE_SECRET_KEY`, the `/upgrade` page
+auto-upgrades accounts in development mode for testing.
 
 ---
 
-## Browser Extension
-
-The extension works in **Chrome, Edge, Brave, and Firefox** (128+).
-
-### Prerequisites — Generate Icons
-
-The extension requires PNG icons before it can be loaded. Generate them from the source SVG:
+## Self-hosting (Ubuntu 24.04 + nginx + Cloudflare)
 
 ```bash
+# 1. Clone to your server
+git clone https://github.com/46bl/candor.git /opt/candor
+
+# 2. Before running setup, create your Cloudflare Origin Certificate:
+#    Cloudflare dashboard → SSL/TLS → Origin Server → Create Certificate
+#    Save cert → /etc/ssl/candor/origin.pem
+#    Save key  → /etc/ssl/candor/origin.key
+#    Set SSL mode to "Full (strict)"
+
+# 3. Run the setup script
+sudo bash /opt/candor/setup.sh
+
+# 4. Add your API keys
+sudo nano /etc/candor.env
+
+# 5. Start
+sudo systemctl restart candor
+sudo journalctl -u candor -f
+```
+
+The setup script:
+- Installs Bun system-wide
+- Creates a `candor` system user
+- Writes a hardened systemd service
+- Configures nginx with Cloudflare real-IP headers
+- Locks HTTP/HTTPS to Cloudflare IP ranges via ufw
+
+**Not using Cloudflare?** Edit `setup.sh` — replace the Cloudflare Origin
+Certificate block with certbot: `certbot --nginx -d yourdomain.com`.
+
+---
+
+## Browser extension
+
+### Development
+
+```bash
+# Generate icons from source SVG first
 cd extension/icons
-bun install          # installs @resvg/resvg-js locally
-bun generate.js      # outputs icon16.png, icon48.png, icon128.png
+bun install && bun generate.js
+
+# Point extension at local server (default)
+# extension/config.js → API_URL: 'http://localhost:3000'
 ```
 
-If you don't have Bun, any SVG-to-PNG tool works. The source file is `icon.svg`.
-Required sizes: **16×16**, **48×48**, **128×128**.
+Load in Chrome: `chrome://extensions` → Developer mode → Load unpacked → select `extension/`  
+Load in Firefox: `about:debugging` → Load Temporary Add-on → select `extension/manifest.json`
 
-### Loading in Chrome / Edge / Brave (development)
-
-1. Open `chrome://extensions` (or `edge://extensions`)
-2. Enable **Developer mode** (toggle, top-right)
-3. Click **Load unpacked**
-4. Select the `extension/` folder
-5. Visit any Amazon product page — the `[ C ] CANDOR` badge appears bottom-right
-
-### Loading in Firefox (development)
-
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on...**
-3. Navigate to the `extension/` folder and select `manifest.json`
-4. Visit any Amazon product page — the badge appears
-
-> **Note:** Temporary add-ons in Firefox are removed on browser restart. For persistent installs, sign and distribute via [addons.mozilla.org](https://addons.mozilla.org/developers/).
-
-### Configuring the API URL
-
-By default the extension talks to `http://localhost:3000` (local dev).
-To point it at your production server, edit `extension/config.js`:
-
-```js
-var CANDOR_CONFIG = {
-  API_URL: 'https://candor.app'   // ← change this
-}
-```
-
----
-
-## Packaging for Distribution
-
-### Chrome Web Store
+### Packaging for distribution
 
 ```bash
+# Chrome Web Store
 cd extension
+zip -r candor-chrome.zip . --exclude "*.DS_Store" --exclude "__MACOSX/*"
 
-# Remove any dev artifacts, then zip the entire folder
-# Do NOT include node_modules, .DS_Store, or source maps
-zip -r candor-chrome.zip . \
-  --exclude "*.DS_Store" \
-  --exclude "__MACOSX/*" \
-  --exclude "*.map"
+# Firefox AMO (also zip the source for Mozilla review)
+zip -r candor-firefox.zip . --exclude "*.DS_Store"
+cd .. && zip -r candor-source.zip . --exclude "*/node_modules/*" --exclude "*/.git/*"
 ```
 
-Upload `candor-chrome.zip` at [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-
-Required before submitting:
-- All three icon sizes generated (16, 48, 128 px PNG)
-- `config.js` pointing to production URL
-- Privacy policy URL filled in the store listing (point to `/privacy`)
-
-### Firefox Add-ons (AMO)
-
-Firefox requires the source code to be submitted alongside the packaged extension
-so Mozilla reviewers can verify it. Package both:
-
-```bash
-cd extension
-
-# 1. Extension package (what users install)
-zip -r candor-firefox.zip . \
-  --exclude "*.DS_Store" \
-  --exclude "__MACOSX/*"
-
-# 2. Source package (for Mozilla review — zip the entire repo root)
-cd ..
-zip -r candor-source.zip . \
-  --exclude "*/node_modules/*" \
-  --exclude "*/.git/*" \
-  --exclude "*.DS_Store"
-```
-
-Submit at [Firefox Add-on Developer Hub](https://addons.mozilla.org/developers/).
-Upload `candor-firefox.zip` as the add-on, and `candor-source.zip` when prompted for source code.
-
-The `browser_specific_settings.gecko.id` in `manifest.json` (`candor@candor.app`)
-must match the add-on ID you register with Mozilla.
+Before packaging for your own deployment, update `extension/config.js` with your
+server URL and `extension/manifest.json` with your domain in `host_permissions`
+and your own `browser_specific_settings.gecko.id`.
 
 ---
 
 ## Architecture
 
 ```
-/candor
+candor/
 ├── web/                        Bun + Hono server
 │   ├── src/
-│   │   ├── index.ts            Server entry, security headers
-│   │   ├── routes/             Page routes (HTML responses)
-│   │   │   ├── index.ts        GET /
+│   │   ├── index.ts            Entry point, security headers
+│   │   ├── routes/             Page routes (HTML)
 │   │   │   ├── analyze.ts      GET+POST /analyze (cookie handling)
-│   │   │   ├── account.ts      GET /account/new, /account, POST /account/status
-│   │   │   ├── upgrade.ts      GET+POST /upgrade
-│   │   │   ├── privacy.ts      GET /privacy
-│   │   │   └── terms.ts        GET /terms
+│   │   │   ├── account.ts      /account/* — account management
+│   │   │   ├── upgrade.ts      /upgrade  — Stripe stub
+│   │   │   ├── privacy.ts      /privacy
+│   │   │   └── terms.ts        /terms
 │   │   ├── api/
-│   │   │   └── analyze.ts      POST /api/analyze (JSON), GET /api/health
+│   │   │   └── analyze.ts      POST /api/analyze (JSON endpoint)
 │   │   ├── lib/
-│   │   │   ├── analyze.ts      Orchestrator (parallel fetch + AI)
-│   │   │   ├── extract.ts      URL/product name parser
-│   │   │   ├── account.ts      Account number logic, auth, rate limits
-│   │   │   ├── db.ts           SQLite (bun:sqlite) — accounts + subscriptions
-│   │   │   ├── ratelimit.ts    In-memory IP rate limiting (account creation)
+│   │   │   ├── analyze.ts      Orchestrator — parallel fetch + AI
+│   │   │   ├── extract.ts      URL / product name parser
+│   │   │   ├── account.ts      Account number logic + auth
+│   │   │   ├── db.ts           SQLite (bun:sqlite)
+│   │   │   ├── ratelimit.ts    In-memory IP rate limiting
 │   │   │   ├── ai/
 │   │   │   │   ├── client.ts   Unified AI client (all providers)
-│   │   │   │   ├── prompts.ts  Analysis prompt templates
+│   │   │   │   ├── prompts.ts  Analysis prompt
 │   │   │   │   └── mock.ts     Deterministic mock for development
 │   │   │   └── sources/
-│   │   │       ├── amazon.ts   Amazon review scraper + fake review heuristics
-│   │   │       ├── reddit.ts   Reddit JSON API
-│   │   │       ├── trustpilot.ts Trustpilot scraper
-│   │   │       └── articles.ts Web article search (Brave → SerpAPI → DDG)
-│   │   └── views/              HTML template functions
-│   ├── public/style.css        Global monochrome CSS
-│   └── .env.example            All environment variables documented
+│   │   │       ├── search.ts   Unified search (Serper/Brave/SerpAPI)
+│   │   │       ├── amazon.ts   Amazon — direct scrape → search fallback
+│   │   │       ├── reddit.ts   Reddit JSON API → search fallback
+│   │   │       ├── trustpilot.ts Trustpilot — direct scrape → search fallback
+│   │   │       └── articles.ts Web articles via search API
+│   │   └── views/              HTML template functions (no framework)
+│   ├── public/style.css        Monochrome CSS
+│   └── .env.example
 │
-└── extension/                  Chrome + Firefox MV3 extension
-    ├── manifest.json           MV3 manifest (includes Firefox gecko settings)
-    ├── compat.js               Browser API shim (chrome ↔ browser namespace)
-    ├── config.js               API URL configuration
-    ├── background.js           Service worker — relays API calls
-    ├── content.js              Product page detector + badge injector
-    ├── popup.html              Extension popup shell
-    ├── popup.js                Popup logic, settings, result rendering
-    ├── popup.css               Popup styles
-    └── icons/
-        ├── icon.svg            Source icon (edit this)
-        ├── generate.js         PNG generator script
-        ├── icon16.png          Generated
-        ├── icon48.png          Generated
-        └── icon128.png         Generated
+├── extension/                  Chrome + Firefox MV3
+│   ├── manifest.json
+│   ├── compat.js               chrome/browser namespace shim
+│   ├── config.js               API URL — change for your deployment
+│   ├── background.js           Service worker
+│   ├── content.js              Badge injector
+│   ├── popup.html/js/css       Extension popup
+│   └── icons/                  SVG source + PNG generator
+│
+├── setup.sh                    Production setup (Ubuntu 24.04 + Cloudflare)
+├── LICENSE                     MIT
+└── CONTRIBUTING.md
 ```
 
 ---
 
-## API Reference
+## API
 
 ```
 POST /api/analyze
 Content-Type: application/json
 
 {
-  "input": "https://amazon.com/dp/B08N5LNQCX",   ← URL or product name
+  "input": "https://amazon.com/dp/B08N5LNQCX",
   "accountNumber": "1234-5678-9012-3456",
-  "customAI": {                                    ← optional
+  "customAI": {
     "provider": "openai",
     "model": "gpt-4o-mini",
     "apiKey": "sk-...",
@@ -235,27 +249,24 @@ GET /api/health
 → { "status": "ok", "privacy": "no-data-stored" }
 ```
 
-Full response schema: see `web/src/lib/analyze.ts` → `AnalysisResult`.
+Full response schema: `web/src/lib/analyze.ts` → `AnalysisResult`.
 
 ---
 
-## Privacy
+## Privacy model
 
-- **No request logging** — zero logging middleware in the server
-- **No analytics** — no third-party scripts anywhere
-- **No cookies** unless the user explicitly opts in (account number convenience cookie — SameSite=Strict, never HttpOnly, clearable at any time)
-- **No IP storage** — IPs used only as in-memory rate-limit keys for account creation, never written to disk, purged on server restart
-- **No search history** — we record that you made *N* checks today, not what you checked
-- **Cache-Control: no-store** on all `/api/*` responses
-- **Custom API keys** — transmitted over HTTPS, used in-memory per-request, immediately discarded
+- No cookies unless user explicitly opts in (account convenience cookie)
+- No IP addresses stored — used only as in-memory rate-limit key for account
+  creation, never written to disk, cleared on restart
+- No search history — only a daily check counter is stored per account
+- No analytics, no third-party scripts
+- Custom API keys sent over HTTPS, used in-memory per request, immediately discarded
+- `Cache-Control: no-store` on all `/api/*` responses
 
-Full policy: `/privacy`
+Full policy at `/privacy` on any running instance.
 
 ---
 
-## Monetization
+## License
 
-- **Free** — 5 checks/day, account number required, web only
-- **Pro** — $7/month or $55/year — unlimited checks + extension
-- **Founding Supporter** — $89 one-time, first 200 only — unlimited forever
-- Revenue source: subscriptions only. Never data. Never ads.
+MIT — see [LICENSE](LICENSE).

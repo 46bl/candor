@@ -11,7 +11,7 @@
 #   1. In Cloudflare dashboard → SSL/TLS → set mode to "Full (strict)"
 #   2. SSL/TLS → Origin Server → Create Certificate
 #      - Key type: RSA (2048)
-#      - Hostnames: c4ndor.xyz, *.c4ndor.xyz
+#      - Hostnames: your-domain.com, *.your-domain.com
 #      - Validity: 15 years
 #   3. Copy the certificate text → save as /etc/ssl/candor/origin.pem
 #   4. Copy the private key text  → save as /etc/ssl/candor/origin.key
@@ -23,7 +23,7 @@
 set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-DOMAIN="c4ndor.xyz"
+DOMAIN="your-domain.com"       # ← change this to your domain
 APP_PORT=3001
 APP_USER="candor"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -60,10 +60,10 @@ if [[ ! -f "${CF_CERT}" || ! -f "${CF_KEY}" ]]; then
   echo -e "${YELLOW}Cloudflare Origin Certificate not found.${NC}"
   echo
   echo "  Before running this script, generate an Origin Certificate in Cloudflare:"
-  echo "    1. Cloudflare dashboard → c4ndor.xyz → SSL/TLS → Origin Server"
+  echo "    1. Cloudflare dashboard → ${DOMAIN} → SSL/TLS → Origin Server"
   echo "    2. Click 'Create Certificate'"
   echo "       - Key type: RSA (2048)"
-  echo "       - Hostnames: c4ndor.xyz, *.c4ndor.xyz"
+  echo "       - Hostnames: ${DOMAIN}, *.${DOMAIN}"
   echo "       - Validity: 15 years"
   echo "    3. Save the certificate to: ${CF_CERT}"
   echo "    4. Save the private key to:  ${CF_KEY}"

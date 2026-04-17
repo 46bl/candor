@@ -8,8 +8,7 @@
     "storage"
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
-    "https://c4ndor.xyz/*"
+    "http://localhost:3000/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -56,7 +55,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "candor@candor.app",
+      "id": "candor@your-domain.com",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": [
