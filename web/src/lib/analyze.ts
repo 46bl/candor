@@ -122,11 +122,12 @@ export async function analyzeProduct(
     })
   }
 
-  // 4. No data available → return mock with insufficient verdict
+  // 4. No data available — surface a clear error rather than fake data
   if (contextParts.length === 0) {
-    const mock = getMockResult(product.name)
-    return { ...mock, reviewQuality: 'insufficient', redFlags: [], score: 5.0,
-      verdict: 'Insufficient public data to form a reliable verdict.', sources }
+    throw new Error(
+      'No review data could be fetched from any source (Amazon, Reddit, Trustpilot, or web articles). ' +
+      'The product may be too obscure, or the sources are temporarily unavailable. Please try again or use a direct Amazon URL.'
+    )
   }
 
   // 5. Build prompt and call AI (use custom provider if user supplied one)
@@ -139,9 +140,16 @@ export async function analyzeProduct(
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
-  } catch {
-    // If parsing fails, return mock rather than crashing the request
-    return getMockResult(product.name)
+    else throw new Error('No JSON found in AI response')
+  } catch (e) {
+    // Log the raw response so we can debug prompt/model issues
+    console.error('[CANDOR] AI response parse failed:', e)
+    console.error('[CANDOR] Raw AI response (first 500 chars):', raw?.slice(0, 500))
+    throw new Error(
+      'The AI returned a response that could not be parsed. ' +
+      'This usually means the model is not following the output format. ' +
+      'Try a different model or switch to the server default.'
+    )
   }
 
   // 7. Validate and clamp all fields
