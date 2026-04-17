@@ -1,0 +1,13 @@
+{
+  "name": "candor-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "@anthropic-ai/sdk": "^0.32.0"
+  }
+}

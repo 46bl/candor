@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- CANDOR logo mark: square bracket C -->
+  <rect width="128" height="128" fill="#0A0A0A"/>
+  <!-- Outer bracket -->
+  <rect x="14" y="14" width="14" height="100" fill="#FFFFFF"/>
+  <rect x="14" y="14" width="60" height="14"  fill="#FFFFFF"/>
+  <rect x="14" y="100" width="60" height="14" fill="#FFFFFF"/>
+  <!-- Inner C cutout -->
+  <rect x="34" y="34" width="50" height="60" fill="#0A0A0A"/>
+  <!-- Top-right corner of C -->
+  <rect x="74" y="34" width="14" height="24" fill="#FFFFFF"/>
+  <!-- Bottom-right corner of C -->
+  <rect x="74" y="70" width="14" height="24" fill="#FFFFFF"/>
+</svg>

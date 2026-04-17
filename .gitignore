@@ -1,0 +1,77 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+.yarn/
+.pnp.*
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+web/.env
+# .env.example is intentionally NOT ignored — it's safe to commit
+
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── Bun ───────────────────────────────────────────────────────────────────────
+# bun.lockb IS committed — keeps installs reproducible
+.bun-cache/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+
+# ── Extension — generated icons ───────────────────────────────────────────────
+# Source SVG is committed; PNGs are generated via `bun extension/icons/generate.js`
+extension/icons/icon16.png
+extension/icons/icon48.png
+extension/icons/icon128.png
+
+# ── SSL / certificates ────────────────────────────────────────────────────────
+# Never commit private keys or certs
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+/etc/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V8
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ── Editors & IDEs ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+bun-debug.log*
+
+# ── Extension build artifacts ─────────────────────────────────────────────────
+extension/*.zip
+
+# ── Claude project memory ─────────────────────────────────────────────────────
+web/memory/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+.cache/
+tmp/
+temp/

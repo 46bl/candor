@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>CANDOR</title>
+<link rel="stylesheet" href="popup.css">
+<!-- No analytics. No tracking. No external resources loaded. -->
+</head>
+<body>
+
+<header class="header">
+  <span class="logo">[ C ]&nbsp;&nbsp;CANDOR</span>
+  <button id="settings-toggle" class="header-btn" title="Settings" aria-label="Settings">&#9881;</button>
+</header>
+
+<!-- Settings panel (hidden by default) -->
+<div id="settings-panel" class="settings-panel hidden">
+  <div class="settings-section">
+    <div class="settings-title">Account Number</div>
+    <input type="text" id="settings-account" class="settings-input"
+      placeholder="XXXX-XXXX-XXXX-XXXX"
+      maxlength="19" autocomplete="off" spellcheck="false">
+    <div class="settings-hint">
+      No account? <a id="get-account-link" href="#" class="settings-link">Get one free &rarr;</a>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">AI Provider <span class="settings-warn">Advanced</span></div>
+    <div class="settings-warn-box">
+      CANDOR is optimized for Llama 3.2 / Claude Haiku. Other models may give unexpected results. Your key is sent to the Candor server, used in-memory only, and immediately discarded.
+    </div>
+    <select id="settings-provider" class="settings-input">
+      <option value="">— Server default (recommended) —</option>
+      <option value="openai">OpenAI</option>
+      <option value="anthropic">Anthropic</option>
+      <option value="ollama">Ollama (local)</option>
+      <option value="lmstudio">LM Studio (local)</option>
+      <option value="custom">Custom (OpenAI-compatible)</option>
+    </select>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">Model</div>
+    <input type="text" id="settings-model" class="settings-input"
+      placeholder="e.g. llama3.2, gpt-4o-mini" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">API Key <span class="settings-hint-inline">(used in-memory only)</span></div>
+    <input type="password" id="settings-apikey" class="settings-input"
+      placeholder="sk-... or blank for server default" autocomplete="off">
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">Base URL <span class="settings-hint-inline">(for Ollama / LM Studio)</span></div>
+    <input type="text" id="settings-baseurl" class="settings-input"
+      placeholder="http://localhost:11434" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="settings-actions">
+    <button id="settings-save" class="btn-save">Save settings</button>
+    <span id="settings-saved" class="settings-saved hidden">Saved!</span>
+  </div>
+</div>
+
+<!-- Input row (always visible when not in settings) -->
+<div id="main-panel">
+  <div class="input-row">
+    <input type="text" id="product-input" class="input"
+      placeholder="Product name or URL..." autocomplete="off" spellcheck="false">
+    <button id="analyze-btn" class="btn-analyze">&rarr;</button>
+  </div>
+
+  <!-- Loading state -->
+  <div id="state-loading" class="state hidden">
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <p class="loading-text">Checking Amazon, Reddit, Trustpilot&hellip;</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="state-error" class="state hidden">
+    <div class="error-icon">!</div>
+    <p id="error-msg" class="error-text"></p>
+    <button id="retry-btn" class="btn-retry">Try again</button>
+  </div>
+
+  <!-- Empty / initial state -->
+  <div id="state-empty" class="state">
+    <p class="empty-text">Enter a product URL or name above for an honest review summary.</p>
+    <p class="empty-tip">Works on Amazon, Etsy, Best Buy, and more.</p>
+    <p id="no-account-hint" class="empty-acct hidden">
+      &#9888; No account number set. <a id="go-get-account" href="#" class="settings-link">Get one free</a> or open Settings.
+    </p>
+  </div>
+
+  <!-- Results state -->
+  <div id="state-results" class="state hidden">
+    <div class="result-header">
+      <div id="result-product" class="result-product"></div>
+      <div id="result-brand"   class="result-brand"></div>
+    </div>
+    <div class="score-row">
+      <div class="score-num-wrap">
+        <span id="result-score" class="score-num"></span>
+        <span class="score-denom">/ 10</span>
+      </div>
+      <div class="score-bar-wrap">
+        <div id="score-bar" class="score-bar"></div>
+      </div>
+    </div>
+    <p id="result-verdict" class="verdict"></p>
+    <div class="badge-row">
+      <span id="badge-quality" class="badge"></span>
+      <span id="badge-fake"    class="badge"></span>
+    </div>
+    <div id="pros-section"  class="section hidden">
+      <div class="section-label">&#10003; What people like</div>
+      <ul id="pros-list"  class="list pros"></ul>
+    </div>
+    <div id="cons-section"  class="section hidden">
+      <div class="section-label">&#8722; Common complaints</div>
+      <ul id="cons-list"  class="list cons"></ul>
+    </div>
+    <div id="flags-section" class="section hidden flagged">
+      <div class="section-label">&#9888; Red flags</div>
+      <ul id="flags-list" class="list flags"></ul>
+    </div>
+    <div class="sources-row" id="sources-row"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <span class="privacy-note">No data stored. Ever.</span>
+  <a id="open-web" class="footer-link" target="_blank" rel="noopener noreferrer">Open in web app</a>
+</footer>
+
+<script src="compat.js"></script>
+<script src="config.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
