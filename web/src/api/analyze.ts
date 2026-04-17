@@ -6,6 +6,7 @@
 import { Hono } from 'hono'
 import { analyzeProduct } from '../lib/analyze.js'
 import { resolveAccount, recordCheck } from '../lib/account.js'
+import { isSelfHosted } from '../lib/config.js'
 import type { CustomAIOptions } from '../lib/ai/client.js'
 
 export const analyzeApi = new Hono()
@@ -45,8 +46,8 @@ analyzeApi.post('/analyze', async (c) => {
     return c.json({ error: 'Field "input" must be 500 characters or fewer.' }, 400)
   }
 
-  // ── Validate account number ─────────────────────────────────────────────────
-  const auth = await resolveAccount(accountNumber)
+  // ── Validate account number (skipped in self-hosted mode) ──────────────────
+  const auth = await resolveAccount(isSelfHosted() ? undefined : accountNumber)
   if (!auth.ok) {
     return c.json({ error: auth.error }, auth.status)
   }
@@ -72,7 +73,7 @@ analyzeApi.post('/analyze', async (c) => {
   try {
     const result = await analyzeProduct(input, customAI)
 
-    // Record the check against the account's daily counter
+    // Record the check against the account's daily counter (no-op in self-hosted)
     await recordCheck(accountNumber)
 
     return c.json(result)

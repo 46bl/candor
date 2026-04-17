@@ -144,6 +144,10 @@ SERPAPI_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
+# ── Self-hosted mode ──────────────────────────────────────────────────────────
+# Set to true to disable tiers, limits, and account requirements
+SELF_HOSTED=true
+
 # ── Server ────────────────────────────────────────────────────────────────────
 NODE_ENV=production
 PORT=${APP_PORT}

@@ -1,12 +1,27 @@
 // /upgrade — pricing and subscription upgrade page
 // Stripe integration is stubbed — configure STRIPE_* env vars to activate.
+// In SELF_HOSTED=true mode, this route returns 404 — there are no tiers.
 
 import { Hono } from 'hono'
 import { layout, escHtml } from '../views/layout.js'
 import { isValidAccountNumberFormat, hashAccountNumber } from '../lib/account.js'
 import { getAccountByHash, upgradeAccount } from '../lib/db.js'
+import { isSelfHosted } from '../lib/config.js'
 
 export const upgradeRoute = new Hono()
+
+// Self-hosted guard — applies to all /upgrade sub-paths
+upgradeRoute.use('*', async (c, next) => {
+  if (isSelfHosted()) {
+    return c.html(layout('Not Found', `<div style="max-width:640px;margin:0 auto;padding:var(--sp-xl) var(--sp-lg)">
+      <div class="eyebrow">404</div>
+      <h1 class="heading-lg">Page not found</h1>
+      <p class="body-copy">This installation runs in self-hosted mode. There are no tiers or subscriptions &mdash; all checks are unlimited.</p>
+      <a href="/analyze" class="btn btn-primary mt-md">Check a product &rarr;</a>
+    </div>`), 404)
+  }
+  await next()
+})
 
 upgradeRoute.get('/', (c) => {
   const prefill = c.req.query('account') ?? ''

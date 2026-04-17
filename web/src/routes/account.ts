@@ -6,6 +6,7 @@ import { createNewAccount, isValidAccountNumberFormat, hashAccountNumber } from 
 import { getAccountByHash, upgradeAccount } from '../lib/db.js'
 import { checkAccountCreationLimit, extractIP } from '../lib/ratelimit.js'
 import { layout, escHtml } from '../views/layout.js'
+import { isSelfHosted } from '../lib/config.js'
 
 export const accountRoute = new Hono()
 
@@ -40,9 +41,9 @@ accountRoute.get('/new', async (c) => {
     <div id="account-num" style="font-size:28px;font-weight:800;letter-spacing:0.08em;word-spacing:8px">
       ${escHtml(account.accountNumber)}
     </div>
-    <div style="margin-top:16px;font-size:11px;color:var(--c-hint)">
+    ${!isSelfHosted() ? `<div style="margin-top:16px;font-size:11px;color:var(--c-hint)">
       Tier: FREE &nbsp;&middot;&nbsp; 5 checks/day
-    </div>
+    </div>` : ''}
   </div>
 
   <div style="border:2px solid var(--c-black);padding:var(--sp-md);margin-bottom:var(--sp-lg)">
@@ -62,7 +63,7 @@ accountRoute.get('/new', async (c) => {
     <strong>How to use it:</strong><br>
     Enter your account number on the analyze page or in the extension settings.
     It acts as your subscription key — no email or password required.
-    To upgrade to Pro, visit <a href="/upgrade" style="color:var(--c-black)">/upgrade</a> and enter this number.
+    ${!isSelfHosted() ? `To upgrade to Pro, visit <a href="/upgrade" style="color:var(--c-black)">/upgrade</a> and enter this number.` : ''}
   </div>
 </div>
 
@@ -88,8 +89,14 @@ accountRoute.get('/', (c) => {
 
   <div style="display:grid;gap:var(--sp-sm);margin-top:var(--sp-lg)">
     <a href="/account/new" class="btn btn-primary">Get a free account number &rarr;</a>
-    <a href="/upgrade"     class="btn btn-outline">Upgrade existing account</a>
+    ${!isSelfHosted() ? `<a href="/upgrade" class="btn btn-outline">Upgrade existing account</a>` : ''}
   </div>
+
+  ${isSelfHosted() ? `<div style="margin-top:var(--sp-lg);padding:var(--sp-md);border:1px solid var(--c-border);font-size:13px;color:var(--c-muted);line-height:1.7">
+    <strong>Self-hosted mode:</strong> Account numbers are optional on this installation.
+    All checks are unlimited &mdash; no account required.
+    <a href="/analyze" style="color:var(--c-black)">Check a product &rarr;</a>
+  </div>` : ''}
 
   <div style="margin-top:var(--sp-xl)">
     <h2 style="font-size:16px;font-weight:600;margin-bottom:var(--sp-md)">Check account status</h2>
@@ -153,7 +160,7 @@ accountRoute.post('/status', async (c) => {
     ${expiryText ? `<div style="font-size:13px;color:var(--c-muted);margin-top:8px">${escHtml(expiryText)}</div>` : ''}
   </div>
   <div style="display:grid;gap:8px;margin-top:var(--sp-lg)">
-    ${account.tier === 'free' || isExpired
+    ${(!isSelfHosted() && (account.tier === 'free' || isExpired))
       ? `<a href="/upgrade" class="btn btn-primary">Upgrade to Pro &rarr;</a>`
       : `<a href="/analyze" class="btn btn-primary">Check a product &rarr;</a>`
     }

@@ -1,6 +1,9 @@
 import { layout } from './layout.js'
+import { isSelfHosted } from '../lib/config.js'
 
 export function landingPage(): string {
+  const selfHosted = isSelfHosted()
+
   const body = `
 
 <div class="hero">
@@ -8,8 +11,11 @@ export function landingPage(): string {
   <h1 class="heading-xl">Know before<br>you buy.</h1>
   <p class="hero-sub">We check Amazon, Reddit, Trustpilot, and across the web &mdash; summarize what&rsquo;s real, flag what&rsquo;s fake, then delete everything.</p>
   <div class="hero-cta-row">
-    <a href="/account/new" class="btn btn-primary">Get a free account &rarr;</a>
-    <a href="/analyze"     class="btn btn-outline">Check a product</a>
+    ${selfHosted
+      ? `<a href="/analyze" class="btn btn-primary">Check a product &rarr;</a>`
+      : `<a href="/account/new" class="btn btn-primary">Get a free account &rarr;</a>
+    <a href="/analyze"     class="btn btn-outline">Check a product</a>`
+    }
     <span class="hero-meta">No email &middot; No tracking &middot; Results in &lt;15s</span>
   </div>
 </div>
@@ -26,23 +32,23 @@ export function landingPage(): string {
 <div class="section">
   <div class="section-inner">
     <div class="eyebrow">How it works</div>
-    <h2 class="heading-lg">Four steps. No email.</h2>
+    <h2 class="heading-lg">${selfHosted ? 'Three steps.' : 'Four steps.'} No email.</h2>
     <div class="steps">
-      <div class="step">
+      ${!selfHosted ? `<div class="step">
         <span class="step-num">01</span>
-        <span class="step-text"><strong>Get a free account number.</strong> No email. No name. Just a randomly generated 16-digit number that is your subscription key. Save it — we can&rsquo;t recover it if lost.</span>
-      </div>
+        <span class="step-text"><strong>Get a free account number.</strong> No email. No name. Just a randomly generated 16-digit number that is your subscription key. Save it &mdash; we can&rsquo;t recover it if lost.</span>
+      </div>` : ''}
       <div class="step">
-        <span class="step-num">02</span>
+        <span class="step-num">${selfHosted ? '01' : '02'}</span>
         <span class="step-text"><strong>Paste a product URL or type its name.</strong> Amazon link, Etsy listing, product name &mdash; anything works.</span>
       </div>
       <div class="step">
-        <span class="step-num">03</span>
+        <span class="step-num">${selfHosted ? '02' : '03'}</span>
         <span class="step-text"><strong>We check four source types simultaneously.</strong> Reddit discussions, Amazon review patterns, Trustpilot company signals, and editorial articles from across the web.</span>
       </div>
       <div class="step">
-        <span class="step-num">04</span>
-        <span class="step-text"><strong>You get a clear verdict.</strong> Score, pros, cons, and red flags. We immediately discard everything. Zero persistence beyond your subscription record.</span>
+        <span class="step-num">${selfHosted ? '03' : '04'}</span>
+        <span class="step-text"><strong>You get a clear verdict.</strong> Score, pros, cons, and red flags. We immediately discard everything. Zero persistence${!selfHosted ? ' beyond your subscription record' : ''}.</span>
       </div>
     </div>
   </div>
@@ -52,7 +58,10 @@ export function landingPage(): string {
   <div class="section-inner">
     <div class="eyebrow" style="color:var(--c-secondary)">Privacy model</div>
     <h2 class="heading-lg" style="color:var(--c-white)">We don&rsquo;t track you.<br>Full stop.</h2>
-    <p class="body-copy">This is not a privacy policy full of asterisks. This is how the product works, technically. Your query exists only in memory for the duration of the request. When the request ends, everything is gone. The only thing we store in our database is a cryptographic hash of your account number, your subscription tier, and a daily check counter.</p>
+    <p class="body-copy">This is not a privacy policy full of asterisks. This is how the product works, technically. Your query exists only in memory for the duration of the request. When the request ends, everything is gone. ${selfHosted
+      ? 'Nothing is stored in our database — no accounts, no counters, nothing.'
+      : 'The only thing we store in our database is a cryptographic hash of your account number, your subscription tier, and a daily check counter.'
+    }</p>
     <div class="privacy-grid">
       <div class="privacy-cell">
         <div class="privacy-cell-label">Cookies set</div>
@@ -82,7 +91,7 @@ export function landingPage(): string {
   </div>
 </div>
 
-<div class="section" style="background:var(--c-white)">
+${!selfHosted ? `<div class="section" style="background:var(--c-white)">
   <div class="section-inner">
     <div class="eyebrow">Pricing</div>
     <h2 class="heading-lg">Simple. No tricks.</h2>
@@ -110,7 +119,7 @@ export function landingPage(): string {
     </div>
     <p class="mono color-muted mt-md">Revenue source: subscriptions only. We make money from access, never from your data.</p>
   </div>
-</div>
+</div>` : ''}
 
 <div class="section">
   <div class="section-inner">
@@ -118,7 +127,7 @@ export function landingPage(): string {
     <h2 class="heading-lg">Honest answers.</h2>
     <div class="faq">
 
-      <div class="faq-item">
+      ${!selfHosted ? `<div class="faq-item">
         <div class="faq-q">Do I need an account?</div>
         <div class="faq-a">Yes &mdash; but not in the traditional sense. You get a randomly generated 16-digit account number. No email, no name, no password. The number is your subscription. Save it like a password &mdash; we cannot recover it if you lose it because we don&rsquo;t store it, only a one-way cryptographic hash.</div>
       </div>
@@ -126,32 +135,38 @@ export function landingPage(): string {
       <div class="faq-item">
         <div class="faq-q">How do I keep my subscription if there&rsquo;s no email login?</div>
         <div class="faq-a">Your account number is your subscription key. Save it in a password manager, write it down, or store it in a secure note. It works on any device you enter it on. This is the same model Mullvad VPN uses &mdash; your number is your account, and only you know it.</div>
-      </div>
+      </div>` : `<div class="faq-item">
+        <div class="faq-q">Do I need an account?</div>
+        <div class="faq-a">No. This installation runs in self-hosted mode &mdash; just paste a product URL or name and click Analyze. No account number, no sign-up, no limits.</div>
+      </div>`}
 
       <div class="faq-item">
         <div class="faq-q">Are you tracking me?</div>
-        <div class="faq-a">No. We set no cookies, log no IP addresses, and keep no product search history. Your query exists only in memory for the duration of the request. We store only a cryptographic hash of your account number, your tier, and a daily check counter. That&rsquo;s the entire database record.</div>
+        <div class="faq-a">No. We set no cookies, log no IP addresses, and keep no product search history. Your query exists only in memory for the duration of the request. ${selfHosted
+          ? 'Nothing is written to disk. Zero persistence.'
+          : 'We store only a cryptographic hash of your account number, your tier, and a daily check counter. That&rsquo;s the entire database record.'
+        }</div>
       </div>
 
-      <div class="faq-item">
+      ${!selfHosted ? `<div class="faq-item">
         <div class="faq-q">How do you make money?</div>
-        <div class="faq-a">Subscriptions. That&rsquo;s it. We sell access to the tool, not data about you. We are closed-source and independently operated. There is no investor pressure to monetize your data. If we ever add affiliate links, they will be clearly labeled as <strong>[affiliate]</strong>.</div>
+        <div class="faq-a">Subscriptions. That&rsquo;s it. We sell access to the tool, not data about you. There is no investor pressure to monetize your data. If we ever add affiliate links, they will be clearly labeled as <strong>[affiliate]</strong>.</div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">What happens if you shut down? I bought a Lifetime plan.</div>
         <div class="faq-a">We take this seriously. Our <a href="/terms" style="color:var(--c-black)">Terms of Service</a> include a specific shutdown policy:
         we will give at least 60 days&rsquo; notice, and we will issue prorated refunds to Founding Supporter holders based on how long the service ran after their purchase (75% within 12 months, 50% within 24 months, 25% within 36 months). We are a small independent service &mdash; &ldquo;unlimited forever&rdquo; means the lifetime of CANDOR, not yours.</div>
-      </div>
+      </div>` : ''}
 
       <div class="faq-item">
         <div class="faq-q">Is it unbiased?</div>
-        <div class="faq-a">We don&rsquo;t filter results to favor any seller or brand. The AI has no commercial relationship with any product we analyze. Red flags are surfaced even for popular, highly-rated items. The source code for the analysis prompt is available to inspect &mdash; contact us if you want to review it.</div>
+        <div class="faq-a">We don&rsquo;t filter results to favor any seller or brand. The AI has no commercial relationship with any product we analyze. Red flags are surfaced even for popular, highly-rated items.</div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">Can I use my own AI model or API key?</div>
-        <div class="faq-a">Yes. The Advanced Settings panel on the analyze page and extension lets you specify your own AI provider, model, API key, and endpoint (for Ollama, LM Studio, or any OpenAI-compatible API). Your key is used in-memory for that request only and immediately discarded &mdash; never stored or logged. We recommend sticking with the default for best results; other models may produce inconsistent analysis.</div>
+        <div class="faq-a">Yes. The Advanced Settings panel on the analyze page and extension lets you specify your own AI provider, model, API key, and endpoint (for Ollama, LM Studio, or any OpenAI-compatible API). Your key is used in-memory for that request only and immediately discarded &mdash; never stored or logged.</div>
       </div>
 
       <div class="faq-item">
@@ -161,7 +176,7 @@ export function landingPage(): string {
 
       <div class="faq-item">
         <div class="faq-q">Is this open source?</div>
-        <div class="faq-a">No. CANDOR is closed-source. The privacy model and data flow are described transparently in documentation and these FAQs. If you want to verify the privacy claims independently, the extension&rsquo;s network behavior is inspectable via browser DevTools &mdash; you&rsquo;ll see no third-party requests.</div>
+        <div class="faq-a">Yes. CANDOR is MIT-licensed and available on <a href="https://github.com/46bl/candor" style="color:var(--c-black)">GitHub</a>. You can inspect the privacy claims in the source, self-host your own instance, or contribute improvements.</div>
       </div>
 
     </div>

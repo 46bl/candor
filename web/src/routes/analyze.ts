@@ -3,6 +3,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { analyzePage } from '../views/analyze.js'
 import { analyzeProduct } from '../lib/analyze.js'
 import { resolveAccount, recordCheck } from '../lib/account.js'
+import { isSelfHosted } from '../lib/config.js'
 import type { CustomAIOptions } from '../lib/ai/client.js'
 
 export const analyzeRoute = new Hono()
@@ -38,8 +39,8 @@ analyzeRoute.post('/', async (c) => {
     return c.html(analyzePage({ input: input.slice(0, 500), error: 'Input too long. Max 500 characters.', prefillAccount }), 400)
   }
 
-  // Validate account number
-  const auth = await resolveAccount(accountNumber)
+  // Validate account number (skipped in self-hosted mode)
+  const auth = await resolveAccount(isSelfHosted() ? undefined : accountNumber)
   if (!auth.ok) {
     return c.html(analyzePage({ input, error: auth.error, prefillAccount }), auth.status)
   }
@@ -58,7 +59,7 @@ analyzeRoute.post('/', async (c) => {
 
   try {
     const result = await analyzeProduct(input, customAI)
-    await recordCheck(accountNumber)
+    if (!isSelfHosted()) await recordCheck(accountNumber)
 
     // Handle cookie preference
     // rememberMe checked → set/refresh cookie; unchecked → clear it

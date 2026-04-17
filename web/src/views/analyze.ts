@@ -1,5 +1,6 @@
 import { layout, escHtml } from './layout.js'
 import { renderResult } from './components.js'
+import { isSelfHosted } from '../lib/config.js'
 import type { AnalysisResult } from '../lib/analyze.js'
 
 export function analyzePage(opts: {
@@ -15,7 +16,7 @@ export function analyzePage(opts: {
   <h1 class="heading-lg">Check a Product</h1>
   <p class="analyze-meta">
     Paste a product URL or type a product name. We check Amazon, Reddit, Trustpilot, and the web.
-    Requires an account number. <a href="/account/new" style="color:var(--c-black)">Get one free &rarr;</a>
+    ${!isSelfHosted() ? `Requires an account number. <a href="/account/new" style="color:var(--c-black)">Get one free &rarr;</a>` : ''}
   </p>
 
   <form method="POST" action="/analyze" id="analyze-form">
@@ -37,7 +38,7 @@ export function analyzePage(opts: {
       </button>
     </div>
 
-    <!-- Account number -->
+    ${!isSelfHosted() ? `<!-- Account number -->
     <div style="margin-bottom:var(--sp-sm)">
       <label style="display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-secondary);margin-bottom:6px">
         Account Number
@@ -68,7 +69,7 @@ export function analyzePage(opts: {
         style="font-family:var(--font-mono);font-size:10px;background:none;border:none;color:var(--c-secondary);cursor:pointer;text-decoration:underline">
         Clear saved account
       </button>` : ''}
-    </div>
+    </div>` : ''}
 
     <!-- Advanced Settings -->
     <details class="advanced-settings" id="advanced-settings">
@@ -79,19 +80,25 @@ export function analyzePage(opts: {
 
       <div class="advanced-body">
 
-        <!-- Quota explanation — critical clarity -->
+        <!-- Quota / privacy explanation -->
         <div class="advanced-quota-box">
-          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-secondary);margin-bottom:8px">
+          ${!isSelfHosted() ? `<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-secondary);margin-bottom:8px">
             How this affects your daily limit
           </div>
           <p style="font-size:13px;line-height:1.65;margin-bottom:8px">
             <strong>Custom AI settings do count against your daily quota.</strong>
             The server still fetches reviews from Amazon, Reddit, Trustpilot, and the web
-            on your behalf — that work happens regardless of which AI processes it.
+            on your behalf &mdash; that work happens regardless of which AI processes it.
           </p>
           <p style="font-size:13px;line-height:1.65;margin-bottom:8px">
             <strong>Bonus for Pro &amp; Lifetime:</strong> Unlimited checks either way.
-          </p>
+          </p>` : `<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-secondary);margin-bottom:8px">
+            About custom AI settings
+          </div>
+          <p style="font-size:13px;line-height:1.65;margin-bottom:8px">
+            Custom AI settings use your provider instead of the server default.
+            This is useful for testing different models or using a model you have access to.
+          </p>`}
           <p style="font-size:13px;line-height:1.65">
             <strong>Your API key flow:</strong> Your key is sent to the Candor server
             over HTTPS, used in-memory to call your chosen provider for that request,

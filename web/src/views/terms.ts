@@ -1,9 +1,11 @@
 import { layout } from './layout.js'
+import { isSelfHosted } from '../lib/config.js'
 
 const EFFECTIVE_DATE = '2026-04-16'
 const COMPANY = 'CANDOR'
 
 export function termsPage(): string {
+  const selfHosted = isSelfHosted()
   const body = `<div style="max-width:680px;margin:0 auto;padding:var(--sp-xl) var(--sp-lg)">
 
   <div class="eyebrow">Legal</div>
@@ -53,7 +55,7 @@ export function termsPage(): string {
     </p>
   </section>
 
-  <section>
+  ${!selfHosted ? `<section>
     <h2 style="font-size:15px;font-weight:700;margin-bottom:var(--sp-sm);padding-bottom:8px;border-bottom:1px solid var(--c-border)">
       4. Subscriptions and Payments
     </h2>
@@ -106,7 +108,7 @@ export function termsPage(): string {
       with or without notice. In such cases, we will make reasonable efforts to provide refunds
       but cannot guarantee them.
     </p>
-  </section>
+  </section>` : ''}
 
   <section>
     <h2 style="font-size:15px;font-weight:700;margin-bottom:var(--sp-sm);padding-bottom:8px;border-bottom:1px solid var(--c-border)">

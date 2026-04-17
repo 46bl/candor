@@ -11,6 +11,7 @@
 
 import { createAccount, getAccountByHash, isRateLimited, incrementDailyChecks } from './db.js'
 import type { AccountRow } from './db.js'
+import { isSelfHosted } from './config.js'
 
 // ── Generation ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,22 @@ export type AuthResult =
   | { ok: false; status: number; error: string }
 
 export async function resolveAccount(accountNumber: string | undefined): Promise<AuthResult> {
+  // Self-hosted mode: no account required, no rate limits, no tier checks.
+  if (isSelfHosted()) {
+    return {
+      ok: true,
+      account: {
+        id: 0,
+        account_hash: '',
+        tier: 'lifetime',
+        created_at: new Date().toISOString(),
+        expires_at: null,
+        daily_checks: 0,
+        last_check_date: null,
+      } as AccountRow,
+    }
+  }
+
   if (!accountNumber || !isValidAccountNumberFormat(accountNumber)) {
     return {
       ok: false,
@@ -134,6 +151,8 @@ export async function resolveAccount(accountNumber: string | undefined): Promise
 }
 
 export async function recordCheck(accountNumber: string): Promise<void> {
+  // Self-hosted mode: no counters to increment.
+  if (isSelfHosted()) return
   const hash = await hashAccountNumber(accountNumber)
   incrementDailyChecks(hash)
 }

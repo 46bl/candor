@@ -1,8 +1,10 @@
 import { layout } from './layout.js'
+import { isSelfHosted } from '../lib/config.js'
 
 const EFFECTIVE_DATE = '2026-04-16'
 
 export function privacyPage(): string {
+  const selfHosted = isSelfHosted()
   const body = `<div style="max-width:680px;margin:0 auto;padding:var(--sp-xl) var(--sp-lg)">
 
   <div class="eyebrow">Legal</div>
@@ -137,7 +139,7 @@ export function privacyPage(): string {
     <ul style="font-size:14px;color:var(--c-muted);line-height:1.85;margin-left:20px">
       <li><strong>Amazon, Reddit, Trustpilot</strong> — to fetch publicly available review data. These sites may log our server&rsquo;s IP. Your IP is never forwarded.</li>
       <li><strong>AI provider</strong> (OpenAI, Anthropic, Groq, or your custom endpoint) — receives the assembled prompt only. No account information is sent. Responses are discarded immediately.</li>
-      <li><strong>Stripe</strong> — handles payment processing for Pro and Lifetime subscriptions. Stripe stores your payment details under their own privacy policy. We pass only a hash of your account number to Stripe as metadata — never the account number itself, and never your name or email.</li>
+      ${!selfHosted ? `<li><strong>Stripe</strong> — handles payment processing for Pro and Lifetime subscriptions. Stripe stores your payment details under their own privacy policy. We pass only a hash of your account number to Stripe as metadata &mdash; never the account number itself, and never your name or email.</li>` : ''}
     </ul>
     <p style="font-size:14px;color:var(--c-muted);line-height:1.75;margin-top:var(--sp-sm)">
       We use no advertising networks, analytics platforms, CDNs that fingerprint users, or social login providers.

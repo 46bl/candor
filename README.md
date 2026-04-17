@@ -95,11 +95,31 @@ SERPER_API_KEY=your_key   # or BRAVE_API_KEY or SERPAPI_KEY
 Without a search key, sources fall back to direct scraping — which works in
 development on residential IPs but fails silently on VPS/cloud hosts.
 
+### Self-hosted mode
+
+```env
+SELF_HOSTED=true
+```
+
+Set this to skip accounts, rate limits, tiers, and pricing entirely. Ideal for
+personal use or a small trusted group.
+
+What it does:
+- No account number required — the analyze page and API work without one
+- No daily quotas — unlimited checks for everyone
+- `/upgrade` returns 404
+- Pricing section hidden from the landing page
+- Sections 4 & 5 (payments, shutdown/refund policy) hidden from Terms of Service
+- Stripe removed from the Privacy Policy third-party list
+
+The setup script sets `SELF_HOSTED=true` by default. Set it to `false` (or
+remove it) if you want to run a multi-user hosted service with the full account
+and subscription system.
+
 ### Accounts and subscriptions
 
-The account system is optional. By default, a free account allows 5 checks/day.
-You can disable the limit or remove the account requirement entirely by editing
-`web/src/lib/account.ts`.
+The account system is optional when `SELF_HOSTED=false`. By default, a free
+account allows 5 checks/day. You can adjust limits in `web/src/lib/account.ts`.
 
 Stripe integration is stubbed. Without `STRIPE_SECRET_KEY`, the `/upgrade` page
 auto-upgrades accounts in development mode for testing.
