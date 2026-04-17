@@ -1,28 +1,39 @@
-// reddit.ts — fetch Reddit discussions about a product
-// Uses the public JSON API — no API key required for read-only search.
-// Stateless. No caching. Data discarded after use.
+// reddit.ts — Reddit discussions about a product
+// Strategy: try public JSON API first, fall back to search API.
+
+import { searchWeb } from './search.js'
 
 export interface RedditData {
   threads: Array<{
-    title: string
-    score: number
+    title:      string
+    score:      number
     topComment: string
-    url: string
-    subreddit: string
+    url:        string
+    subreddit:  string
   }>
 }
 
 export async function fetchRedditMentions(productName: string): Promise<RedditData | null> {
-  // Search for threads mentioning the product with "review" context
+  // 1. Try the public Reddit JSON API
+  const direct = await fetchViaRedditAPI(productName)
+  if (direct) return direct
+
+  // 2. Fall back to search API
+  return fetchRedditViaSearch(productName)
+}
+
+// ── Reddit JSON API ───────────────────────────────────────────────────────────
+
+async function fetchViaRedditAPI(productName: string): Promise<RedditData | null> {
   const query = encodeURIComponent(`"${productName}"`)
-  const searchUrl = `https://www.reddit.com/search.json?q=${query}&sort=top&t=year&limit=15&type=link`
+  const url   = `https://www.reddit.com/search.json?q=${query}&sort=top&t=year&limit=15&type=link`
 
   try {
-    const res = await fetch(searchUrl, {
+    const res = await fetch(url, {
       headers: {
-        // Reddit requires a descriptive User-Agent
-        'User-Agent': 'Candor/1.0 privacy-first-review-aggregator',
-        'Accept': 'application/json',
+        // Reddit requires a non-generic User-Agent
+        'User-Agent': 'web:xyz.c4ndor.app:1.0.0 (privacy-first review aggregator)',
+        'Accept':     'application/json',
       },
       signal: AbortSignal.timeout(10_000),
     })
@@ -33,36 +44,56 @@ export async function fetchRedditMentions(productName: string): Promise<RedditDa
       data?: {
         children?: Array<{
           data: {
-            title: string
-            score: number
-            selftext?: string
-            permalink: string
-            subreddit: string
-            url: string
+            title:        string
+            score:        number
+            selftext?:    string
+            permalink:    string
+            subreddit:    string
+            url:          string
             num_comments: number
           }
         }>
       }
     }
 
-    const posts = data.data?.children ?? []
-
+    const posts   = data.data?.children ?? []
     const threads = posts
       .filter((p) => p.data.score > 1 && p.data.title)
       .slice(0, 10)
       .map((p) => ({
-        title: p.data.title,
-        score: p.data.score,
+        title:      p.data.title,
+        score:      p.data.score,
         topComment: p.data.selftext
           ? p.data.selftext.slice(0, 500).replace(/\n+/g, ' ').trim()
           : `(Link post — ${p.data.num_comments} comments)`,
-        url: `https://www.reddit.com${p.data.permalink}`,
-        subreddit: p.data.subreddit,
+        url:        `https://www.reddit.com${p.data.permalink}`,
+        subreddit:  p.data.subreddit,
       }))
 
-    if (!threads.length) return null
-    return { threads }
+    return threads.length ? { threads } : null
   } catch {
     return null
   }
+}
+
+// ── Search API fallback ───────────────────────────────────────────────────────
+
+async function fetchRedditViaSearch(productName: string): Promise<RedditData | null> {
+  const results = await searchWeb(`"${productName}" site:reddit.com`, 6)
+  if (!results.length) return null
+
+  const threads = results
+    .filter((r) => r.url.includes('reddit.com'))
+    .map((r) => {
+      const subredditMatch = r.url.match(/reddit\.com\/r\/([^/]+)/)
+      return {
+        title:      r.title,
+        score:      0,
+        topComment: r.snippet,
+        url:        r.url,
+        subreddit:  subredditMatch?.[1] ?? 'reddit',
+      }
+    })
+
+  return threads.length ? { threads } : null
 }
