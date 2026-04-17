@@ -267,6 +267,14 @@ Full policy at `/privacy` on any running instance.
 
 ---
 
+## Support
+
+CANDOR is free and open source. If it's useful to you, consider buying me a coffee:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/46blz)
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
